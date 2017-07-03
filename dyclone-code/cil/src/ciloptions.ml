@@ -94,7 +94,7 @@ let parseExtraFile (s: string) =
       in
         scan 0 (-1)
     done
-  with Sys_error _ -> E.s (E.error "Cannot find extra file: %s\n" s)
+  with Sys_error _ -> E.s (E.error "Cannot find extra file: %s" s)
   |  End_of_file -> () 
 
 
@@ -204,12 +204,20 @@ let options : (string * Arg.spec * string) list =
                 Cil.msvcMode := true;
                 Frontc.setMSVCMode ();
                 if not Machdep.hasMSVC then
-                  ignore (E.warn "Will work in MSVC mode but will be using machine-dependent parameters for GCC since you do not have the MSVC compiler installed\n")),
+                  ignore (E.warn "Will work in MSVC mode but will be using machine-dependent parameters for GCC since you do not have the MSVC compiler installed")),
     " Enable MSVC compatibility; default is GNU";
 
-    "--testcil",
-    Arg.String (fun s -> Cilutil.testcil := s),
-    "<compiler> Test CIL using the given compiler";
+   "--envmachine",
+   Arg.Unit (fun _ ->
+     try
+       let machineModel = Sys.getenv "CIL_MACHINE" in
+       Cil.envMachine := Some (Machdepenv.modelParse machineModel);
+     with 
+       Not_found ->
+	 ignore (E.error "CIL_MACHINE environment variable is not set")
+     | Failure msg ->
+	 ignore (E.error "CIL_MACHINE machine model is invalid: %s" msg)),
+   " Use machine model specified in CIL_MACHINE environment variable";
 
     "--ignore-merge-conflicts",
     Arg.Set Mergecil.ignore_merge_conflicts,
@@ -280,6 +288,47 @@ let options : (string * Arg.spec * string) list =
     (" Prevent small chunks of code from being duplicated" ^
        is_default (not !Cabs2cil.allowDuplication));
 
+    "--makeStaticGlobal",
+    Arg.Set Cil.makeStaticGlobal,
+    (" Convert local static variables into global variables" ^
+       is_default !Cil.makeStaticGlobal);
+
+    "--noMakeStaticGlobal",
+    Arg.Clear Cil.makeStaticGlobal,
+     (" Use initializers for local static variables" ^
+       is_default (not !Cil.makeStaticGlobal));
+
+    "--useLogicalOperators",
+    Arg.Set Cil.useLogicalOperators,
+    (" Where possible (that is, if there are no side-effects),\n\t\t\t\t" ^
+       "retain &&, || and ?: (instead of transforming them to If statements)" ^
+       is_default !Cil.useLogicalOperators);
+
+    "--noUseLogicalOperators",
+    Arg.Clear Cil.useLogicalOperators,
+     ("Transform &&, || and ?: to If statements" ^
+       is_default (not !Cil.useLogicalOperators));
+
+    "--useComputedGoto",
+    Arg.Set Cil.useComputedGoto,
+    (" Retain GCC's computed goto" ^
+       is_default !Cil.useComputedGoto);
+
+    "--noUseComputedGoto",
+    Arg.Clear Cil.useComputedGoto,
+     (" Transform computed goto to Switch statements" ^
+       is_default (not !Cil.useComputedGoto));
+
+    "--useCaseRange",
+    Arg.Set Cil.useCaseRange,
+    (" Retain ranges of values in case labels" ^
+       is_default !Cil.useCaseRange);
+
+    "--noUseCaseRange",
+    Arg.Clear Cil.useCaseRange,
+     (" Transform case ranges to sequence of cases" ^
+       is_default (not !Cil.useCaseRange));
+
     "--keepunused",
     Arg.Set Rmtmps.keepUnused,
     (" Do not remove the unused variables and types" ^
@@ -320,6 +369,10 @@ let options : (string * Arg.spec * string) list =
     Arg.Int (fun n -> Pretty.printDepth := n),
     ("<n> Set max print depth (default: " ^
        string_of_int !Pretty.printDepth ^ ")");
+
+    "--decil",
+    Arg.Clear Cil.print_CIL_Input,
+    " Don't print CIL specific-features like __blockattribute__";
 
     (* Don't just add new flags at the end ... place options
        in the correct category *)

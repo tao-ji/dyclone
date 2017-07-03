@@ -234,14 +234,14 @@ let transformOffsetOf (speclist, dtype) member =
   in
   let memberExpr = replaceBase member in
   let addrExpr = UNARY (ADDROF, memberExpr) in
-  (* slight cheat: hard-coded assumption that size_t == unsigned int *)
-  let sizeofType = [SpecType Tunsigned], JUSTBASE in
+  let sizeofType = [SpecType Tsizet], JUSTBASE in
   let resultExpr = CAST (sizeofType, SINGLE_INIT addrExpr) in
   resultExpr
 
 %}
 
 %token <string * Cabs.cabsloc> IDENT
+%token <string * Cabs.cabsloc> QUALIFIER
 %token <int64 list * Cabs.cabsloc> CST_CHAR
 %token <int64 list * Cabs.cabsloc> CST_WCHAR
 %token <string * Cabs.cabsloc> CST_INT
@@ -254,7 +254,7 @@ let transformOffsetOf (speclist, dtype) member =
 %token <int64 list * Cabs.cabsloc> CST_WSTRING
 
 %token EOF
-%token<Cabs.cabsloc> CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
@@ -886,8 +886,8 @@ statement:
 	                         {CASE (fst $2, $4, (*handleLoc*) $1)}
 |   CASE expression ELLIPSIS expression COLON statement
 	                         {CASERANGE (fst $2, fst $4, $6, (*handleLoc*) $1)}
-|   DEFAULT COLON
-	                         {DEFAULT (NOP $1, (*handleLoc*) $1)}
+|   DEFAULT COLON statement
+	                         {DEFAULT ($3, (*handleLoc*) $1)}
 |   RETURN SEMICOLON		 {RETURN (NOTHING, (*handleLoc*) $1)}
 |   RETURN comma_expression SEMICOLON
 	                         {RETURN (smooth_expression (fst $2), (*handleLoc*) $1)}
@@ -972,6 +972,7 @@ decl_spec_list_opt_no_named:
 type_spec:   /* ISO 6.7.2 */
     VOID            { Tvoid, $1}
 |   CHAR            { Tchar, $1 }
+|   BOOL            { Tbool, $1 }
 |   SHORT           { Tshort, $1 }
 |   INT             { Tint, $1 }
 |   LONG            { Tlong, $1 }
@@ -1309,6 +1310,7 @@ attribute_nocv:
 |   MSATTR                              { (fst $1, []), snd $1 }
                                         /* ISO 6.7.3 */
 |   THREAD                              { ("__thread",[]), $1 }
+|   QUALIFIER                     {("__attribute__",[VARIABLE(fst $1)]),snd $1}
 ;
 
 attribute_nocv_list:
@@ -1540,7 +1542,11 @@ asmopname:
 
 asmclobber:
     /* empty */                         { [] }
-| COLON asmcloberlst_ne                 { $2 }
+| COLON asmcloberlst                    { $2 }
+;
+asmcloberlst:
+    /* empty */                         { [] }
+| asmcloberlst_ne                       { $1 }
 ;
 asmcloberlst_ne:
    one_string_constant                           { [$1] }

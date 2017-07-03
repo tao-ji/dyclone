@@ -56,6 +56,7 @@ type cabsloc = {
 type typeSpecifier = (* Merge all specifiers into one type *)
     Tvoid                             (* Type specifier ISO 6.7.2 *)
   | Tchar
+  | Tbool
   | Tshort
   | Tint
   | Tlong
@@ -63,6 +64,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tfloat
   | Tdouble
   | Tsigned
+  | Tsizet    (* used temporarily to translate offsetof() *)
   | Tunsigned
   | Tnamed of string
   (* each of the following three kinds of specifiers contains a field 
