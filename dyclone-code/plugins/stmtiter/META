@@ -1,0 +1,5 @@
+
+version = "0.1"
+description = "stmtiter"
+archive(byte,plugin) = "stmtiter.cma"
+archive(native,plugin) = "stmtiter.cmxs"

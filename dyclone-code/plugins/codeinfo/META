@@ -1,0 +1,5 @@
+
+version = "0.1"
+description = "codeinfo"
+archive(byte,plugin) = "codeinfo.cma"
+archive(native,plugin) = "codeinfo.cmxs"

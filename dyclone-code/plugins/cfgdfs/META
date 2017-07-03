@@ -1,0 +1,5 @@
+
+version = "0.1"
+description = "cfgdfs"
+archive(byte,plugin) = "cfgdfs.cma"
+archive(native,plugin) = "cfgdfs.cmxs"
