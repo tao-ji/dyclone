@@ -89,6 +89,7 @@ let rec getTypeName t =
         |   ILongLong   (*  long long (or _int64 on Microsoft Visual C) *)
         |   IULongLong  (*  unsigned long long (or unsigned _int64 on Microsoft Visual C) *)
         -> "_longlong"
+        | _ -> "_unknown"
     )
     | TFloat (FFloat, _) -> "_float"
     | TFloat (_, _) -> "_double"
@@ -297,7 +298,7 @@ let typeGenFunRandom (tt:typ) : fundec =
        * Update: 09/11/2008: The above (50%) is still not good enough, so we revised it again so that
        * all __dyc_random_ is of an exponential decade kind of style. *)
       let fbody = 
-        let ccc = List.filter ( fun fd -> fd.fname != missingFieldName && isSupportedType fd.ftype && isSizeofType fd.ftype ) cc.cfields in (* remove unsupported fields *)
+        let ccc = List.filter ( fun fd -> fd.fname <> missingFieldName && isSupportedType fd.ftype && isSizeofType fd.ftype ) cc.cfields in (* remove unsupported fields *)
         let assignfield fd =
           let fdname = getFunNameTypeUnroll ~prefix:typeFunNamePrefixRandom fd.ftype in
           let fdf = makeVarinfo false fdname (TFun(fd.ftype, Some [("__dyc_exp", uintType, [])], false, [])) in
@@ -411,7 +412,7 @@ let typeGenFunRead (tt:typ) : fundec =
       f.svar.vtype <- TFun(t, Some [], false, []);
       f.svar.vstorage <- Extern;
       let fbody = 
-        let ccc = List.filter ( fun fd -> fd.fname != missingFieldName && isSupportedType fd.ftype && isSizeofType fd.ftype ) cc.cfields in (* remove unsupported (bit-)fields *)
+        let ccc = List.filter ( fun fd -> fd.fname <> missingFieldName && isSupportedType fd.ftype && isSizeofType fd.ftype ) cc.cfields in (* remove unsupported (bit-)fields *)
         let assignfield fd =
           let fdname = getFunNameTypeUnroll ~prefix:typeFunNamePrefixRead fd.ftype in
           let fdf = makeVarinfo false fdname (TFun(fd.ftype, Some [], false, [])) in
@@ -491,7 +492,7 @@ let typeGenFunPrint (t:typ) : fundec =
       setFormals f [farg];
       f.svar.vstorage <- Extern;
       let fbody = 
-        let ccc = List.filter ( fun fd -> fd.fname != missingFieldName && isSupportedType fd.ftype ) cc.cfields in (* remove unsupported (bit-)fields *)
+        let ccc = List.filter ( fun fd -> fd.fname <> missingFieldName && isSupportedType fd.ftype ) cc.cfields in (* remove unsupported (bit-)fields *)
         let printfield fd =
           let fdname = getFunNameTypeUnroll ~prefix:typeFunNamePrefixPrint fd.ftype in
           let fdf = makeVarinfo false fdname (TFun(voidType, Some [("v", fd.ftype, [])], false, [])) in
